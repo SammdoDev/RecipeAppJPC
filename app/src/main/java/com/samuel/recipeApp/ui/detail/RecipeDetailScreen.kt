@@ -1,6 +1,5 @@
 package com.samuel.recipeApp.ui.detail
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.*
@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,23 +43,38 @@ fun RecipeDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    var isIndonesian by remember { mutableStateOf(false) }
 
     LaunchedEffect(recipeId) {
         viewModel.loadRecipeDetail(recipeId)
     }
 
+    // Auto translate ketika bahasa diubah ke Indonesia
+    LaunchedEffect(isIndonesian) {
+        if (isIndonesian && uiState.translatedMeal == null && uiState.recipe != null) {
+            viewModel.translateRecipe()
+        } else if (!isIndonesian) {
+            viewModel.clearTranslation()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FE))) {
         when {
-            uiState.isLoading -> ModernLoadingState()
+            uiState.isLoading -> ModernLoadingState(isIndonesian = isIndonesian)
             uiState.error != null -> ModernErrorState(
                 error = uiState.error ?: "Unknown error",
-                onRetry = { viewModel.loadRecipeDetail(recipeId) }
+                onRetry = { viewModel.loadRecipeDetail(recipeId) },
+                isIndonesian = isIndonesian
             )
             uiState.recipe != null -> {
                 ModernRecipeDetailContent(
                     recipe = uiState.recipe!!,
+                    translatedMeal = uiState.translatedMeal,
                     scrollState = scrollState,
-                    onBackPressed = onBackPressed
+                    onBackPressed = onBackPressed,
+                    isIndonesian = isIndonesian,
+                    isTranslating = uiState.isTranslating,
+                    onTranslateClick = { isIndonesian = !isIndonesian }
                 )
             }
         }
@@ -70,13 +84,21 @@ fun RecipeDetailScreen(
 @Composable
 fun ModernRecipeDetailContent(
     recipe: com.samuel.recipeApp.data.api.Meal,
+    translatedMeal: com.samuel.recipeApp.data.api.TranslatedMeal?,
     scrollState: androidx.compose.foundation.ScrollState,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    isIndonesian: Boolean,
+    isTranslating: Boolean,
+    onTranslateClick: () -> Unit
 ) {
     val animatedProgress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         animatedProgress.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
     }
+
+    // Get ingredients dan instructions
+    val ingredients = translatedMeal?.getIngredients(isIndonesian) ?: recipe.getIngredients()
+    val instructions = translatedMeal?.getInstructions(isIndonesian) ?: recipe.getInstructionSteps()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -141,6 +163,32 @@ fun ModernRecipeDetailContent(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Translate Button with Loading Indicator
+                        IconButton(
+                            onClick = onTranslateClick,
+                            enabled = !isTranslating,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(
+                                    if (isIndonesian) GradientPrimary.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.9f),
+                                    CircleShape
+                                )
+                        ) {
+                            if (isTranslating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = if (isIndonesian) Color.White else GradientPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Translate,
+                                    contentDescription = "Translate",
+                                    tint = if (isIndonesian) Color.White else GradientPrimary
+                                )
+                            }
+                        }
+
                         IconButton(
                             onClick = { },
                             modifier = Modifier
@@ -179,7 +227,7 @@ fun ModernRecipeDetailContent(
                         containerColor = Color(0xFFFF0000),
                         contentColor = Color.White
                     ) {
-                        Icon(Icons.Default.PlayArrow, "Watch Video")
+                        Icon(Icons.Default.PlayArrow, if (isIndonesian) "Tonton Video" else "Watch Video")
                     }
                 }
             }
@@ -217,14 +265,14 @@ fun ModernRecipeDetailContent(
                     ) {
                         recipe.strCategory?.let { category ->
                             ModernTag(
-                                text = category,
+                                text = if (isIndonesian) translateCategory(category) else category,
                                 icon = Icons.Rounded.Restaurant,
                                 gradient = listOf(GradientPrimary, GradientSecondary)
                             )
                         }
                         recipe.strArea?.let { area ->
                             ModernTag(
-                                text = area,
+                                text = if (isIndonesian) translateArea(area) else area,
                                 icon = Icons.Rounded.Public,
                                 gradient = listOf(Color(0xFF11998e), Color(0xFF38ef7d))
                             )
@@ -235,9 +283,9 @@ fun ModernRecipeDetailContent(
 
                     // Ingredients Section
                     SectionHeader(
-                        title = "Ingredients",
+                        title = if (isIndonesian) "Bahan-bahan" else "Ingredients",
                         icon = Icons.Rounded.ShoppingCart,
-                        itemCount = recipe.getIngredients().size
+                        itemCount = ingredients.size
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -254,13 +302,13 @@ fun ModernRecipeDetailContent(
                         colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
-                            recipe.getIngredients().forEachIndexed { index, (ingredient, measure) ->
+                            ingredients.forEachIndexed { index, (ingredient, measure) ->
                                 IngredientItem(
                                     ingredient = ingredient,
                                     measure = measure,
                                     index = index + 1
                                 )
-                                if (index < recipe.getIngredients().lastIndex) {
+                                if (index < ingredients.lastIndex) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(vertical = 12.dp),
                                         color = Color(0xFFF0F0F0)
@@ -274,24 +322,19 @@ fun ModernRecipeDetailContent(
 
                     // Instructions Section
                     SectionHeader(
-                        title = "Instructions",
+                        title = if (isIndonesian) "Cara Memasak" else "Instructions",
                         icon = Icons.Rounded.MenuBook,
                         itemCount = null
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    recipe.strInstructions?.let { instructions ->
-                        val steps = instructions.split("\r\n", "\n")
-                            .filter { it.isNotBlank() }
-
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            steps.forEachIndexed { index, step ->
-                                InstructionStep(
-                                    stepNumber = index + 1,
-                                    instruction = step.trim()
-                                )
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        instructions.forEachIndexed { index, step ->
+                            InstructionStep(
+                                stepNumber = index + 1,
+                                instruction = step.trim()
+                            )
                         }
                     }
 
@@ -299,6 +342,59 @@ fun ModernRecipeDetailContent(
                 }
             }
         }
+    }
+}
+
+// Helper functions tetap sama
+fun translateCategory(category: String): String {
+    return when (category) {
+        "Beef" -> "Daging Sapi"
+        "Chicken" -> "Ayam"
+        "Dessert" -> "Makanan Penutup"
+        "Lamb" -> "Daging Domba"
+        "Miscellaneous" -> "Lainnya"
+        "Pasta" -> "Pasta"
+        "Pork" -> "Daging Babi"
+        "Seafood" -> "Makanan Laut"
+        "Side" -> "Lauk"
+        "Starter" -> "Pembuka"
+        "Vegan" -> "Vegan"
+        "Vegetarian" -> "Vegetarian"
+        "Breakfast" -> "Sarapan"
+        "Goat" -> "Daging Kambing"
+        else -> category
+    }
+}
+
+fun translateArea(area: String): String {
+    return when (area) {
+        "American" -> "Amerika"
+        "British" -> "Inggris"
+        "Canadian" -> "Kanada"
+        "Chinese" -> "Tiongkok"
+        "Croatian" -> "Kroasia"
+        "Dutch" -> "Belanda"
+        "Egyptian" -> "Mesir"
+        "French" -> "Prancis"
+        "Greek" -> "Yunani"
+        "Indian" -> "India"
+        "Irish" -> "Irlandia"
+        "Italian" -> "Italia"
+        "Jamaican" -> "Jamaika"
+        "Japanese" -> "Jepang"
+        "Kenyan" -> "Kenya"
+        "Malaysian" -> "Malaysia"
+        "Mexican" -> "Meksiko"
+        "Moroccan" -> "Maroko"
+        "Polish" -> "Polandia"
+        "Portuguese" -> "Portugal"
+        "Russian" -> "Rusia"
+        "Spanish" -> "Spanyol"
+        "Thai" -> "Thailand"
+        "Tunisian" -> "Tunisia"
+        "Turkish" -> "Turki"
+        "Vietnamese" -> "Vietnam"
+        else -> area
     }
 }
 
@@ -463,7 +559,7 @@ fun InstructionStep(stepNumber: Int, instruction: String) {
 }
 
 @Composable
-fun ModernLoadingState() {
+fun ModernLoadingState(isIndonesian: Boolean = false) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(
@@ -473,7 +569,7 @@ fun ModernLoadingState() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "Loading recipe...",
+                if (isIndonesian) "Memuat resep..." else "Loading recipe...",
                 style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
             )
         }
@@ -481,7 +577,7 @@ fun ModernLoadingState() {
 }
 
 @Composable
-fun ModernErrorState(error: String, onRetry: () -> Unit) {
+fun ModernErrorState(error: String, onRetry: () -> Unit, isIndonesian: Boolean = false) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -490,7 +586,7 @@ fun ModernErrorState(error: String, onRetry: () -> Unit) {
             Text("😔", fontSize = 64.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "Something went wrong",
+                if (isIndonesian) "Ada yang salah" else "Something went wrong",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -503,7 +599,7 @@ fun ModernErrorState(error: String, onRetry: () -> Unit) {
             ) {
                 Icon(Icons.Rounded.Refresh, null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Try Again")
+                Text(if (isIndonesian) "Coba Lagi" else "Try Again")
             }
         }
     }
