@@ -85,7 +85,28 @@ class HomeViewModel(
         }
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+    fun filterByCategory(category: String) {
+        viewModelScope.launch {
+            repository.getRecipesByCategory(category).collect { result ->
+                when (result) {
+                    is Result.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                    }
+                    is Result.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            recipes = result.data,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                    is Result.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = result.message
+                        )
+                    }
+                }
+            }
+        }
     }
 }

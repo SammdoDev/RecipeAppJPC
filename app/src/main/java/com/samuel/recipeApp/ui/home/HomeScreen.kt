@@ -11,8 +11,8 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material3.*
@@ -30,7 +30,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.samuel.recipeApp.ui.animation.LoaderList
 
@@ -42,6 +41,15 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("All") }
+    var isIndonesian by remember { mutableStateOf(false) }
+
+    // Daftar kategori
+    val categories = listOf(
+        "All", "Beef", "Chicken", "Dessert", "Lamb",
+        "Miscellaneous", "Pasta", "Pork", "Seafood",
+        "Side", "Starter", "Vegan", "Vegetarian", "Breakfast", "Goat"
+    )
 
     // Gradient colors
     val gradientColors = listOf(
@@ -77,34 +85,23 @@ fun HomeScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Discover",
+                                text = if (isIndonesian) "Temukan" else "Discover",
                                 style = MaterialTheme.typography.headlineLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                             )
                             Text(
-                                text = "Find your favorite recipes 🍳",
+                                text = if (isIndonesian) "Cari resep favoritmu 🍳" else "Find your favorite recipes 🍳",
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = Color.White.copy(alpha = 0.8f)
                                 )
                             )
                         }
 
-                        // Refresh Button with Animation
-                        val infiniteTransition = rememberInfiniteTransition(label = "refresh")
-                        val rotation by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = if (uiState.isLoading) 360f else 0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "rotation"
-                        )
-
+                        // Translate Button
                         IconButton(
-                            onClick = { viewModel.loadRandomRecipes() },
+                            onClick = { isIndonesian = !isIndonesian },
                             modifier = Modifier
                                 .size(48.dp)
                                 .background(
@@ -113,12 +110,9 @@ fun HomeScreen(
                                 )
                         ) {
                             Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = "Refresh",
-                                tint = Color.White,
-                                modifier = Modifier.graphicsLayer {
-                                    rotationZ = if (uiState.isLoading) rotation else 0f
-                                }
+                                Icons.Default.Translate,
+                                contentDescription = "Translate",
+                                tint = Color.White
                             )
                         }
                     }
@@ -147,7 +141,7 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             placeholder = {
                                 Text(
-                                    "Search recipes...",
+                                    if (isIndonesian) "Cari resep..." else "Search recipes...",
                                     color = Color.Gray
                                 )
                             },
@@ -170,6 +164,51 @@ fun HomeScreen(
                 }
             }
 
+            // Category Tabs
+            ScrollableTabRow(
+                selectedTabIndex = categories.indexOf(selectedCategory),
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = Color.White,
+                contentColor = Color(0xFF667eea),
+                edgePadding = 16.dp,
+                indicator = {},
+                divider = {}
+            ) {
+                categories.forEach { category ->
+                    val isSelected = selectedCategory == category
+                    Tab(
+                        selected = isSelected,
+                        onClick = {
+                            selectedCategory = category
+                            if (category == "All") {
+                                viewModel.loadRandomRecipes()
+                            } else {
+                                viewModel.filterByCategory(category)
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (isSelected)
+                                Color(0xFF667eea)
+                            else
+                                Color(0xFFF0F0F0),
+                            modifier = Modifier.padding(4.dp)
+                        ) {
+                            Text(
+                                text = if (isIndonesian) translateCategory(category) else category,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    color = if (isSelected) Color.White else Color.Gray,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
             // Content Area
             when {
                 uiState.isLoading -> {
@@ -179,12 +218,13 @@ fun HomeScreen(
                 uiState.error != null -> {
                     ErrorState(
                         error = uiState.error ?: "Unknown error",
-                        onRetry = { viewModel.loadRandomRecipes() }
+                        onRetry = { viewModel.loadRandomRecipes() },
+                        isIndonesian = isIndonesian
                     )
                 }
 
                 uiState.recipes.isEmpty() -> {
-                    EmptyState()
+                    EmptyState(isIndonesian = isIndonesian)
                 }
 
                 else -> {
@@ -212,6 +252,7 @@ fun HomeScreen(
                             ModernRecipeCard(
                                 recipe = recipe,
                                 onClick = { onRecipeClick(recipe.idMeal) },
+                                isIndonesian = isIndonesian,
                                 modifier = Modifier.graphicsLayer {
                                     alpha = animatedProgress.value
                                     translationY = (1f - animatedProgress.value) * 50f
@@ -225,10 +266,33 @@ fun HomeScreen(
     }
 }
 
+// Fungsi untuk translate kategori ke Indonesia
+fun translateCategory(category: String): String {
+    return when (category) {
+        "All" -> "Semua"
+        "Beef" -> "Daging Sapi"
+        "Chicken" -> "Ayam"
+        "Dessert" -> "Makanan Penutup"
+        "Lamb" -> "Daging Domba"
+        "Miscellaneous" -> "Lainnya"
+        "Pasta" -> "Pasta"
+        "Pork" -> "Daging Babi"
+        "Seafood" -> "Makanan Laut"
+        "Side" -> "Lauk"
+        "Starter" -> "Pembuka"
+        "Vegan" -> "Vegan"
+        "Vegetarian" -> "Vegetarian"
+        "Breakfast" -> "Sarapan"
+        "Goat" -> "Daging Kambing"
+        else -> category
+    }
+}
+
 @Composable
 fun ModernRecipeCard(
     recipe: com.samuel.recipeApp.data.api.Meal,
     onClick: () -> Unit,
+    isIndonesian: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -316,7 +380,7 @@ fun ModernRecipeCard(
                     color = Color(0xFF667eea).copy(alpha = 0.9f)
                 ) {
                     Text(
-                        text = category,
+                        text = if (isIndonesian) translateCategory(category) else category,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = Color.White,
@@ -355,7 +419,7 @@ fun ModernRecipeCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = recipe.strArea ?: "International",
+                        text = recipe.strArea ?: if (isIndonesian) "Internasional" else "International",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Color.Gray
                         )
@@ -367,7 +431,7 @@ fun ModernRecipeCard(
 }
 
 @Composable
-fun ErrorState(error: String, onRetry: () -> Unit) {
+fun ErrorState(error: String, onRetry: () -> Unit, isIndonesian: Boolean = false) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -382,7 +446,7 @@ fun ErrorState(error: String, onRetry: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Oops! Something went wrong",
+                text = if (isIndonesian) "Ups! Ada yang salah" else "Oops! Something went wrong",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold
                 )
@@ -402,16 +466,16 @@ fun ErrorState(error: String, onRetry: () -> Unit) {
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.height(48.dp)
             ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
+                Icon(Icons.Default.Translate, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Try Again")
+                Text(if (isIndonesian) "Coba Lagi" else "Try Again")
             }
         }
     }
 }
 
 @Composable
-fun EmptyState() {
+fun EmptyState(isIndonesian: Boolean = false) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -426,14 +490,14 @@ fun EmptyState() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No recipes found",
+                text = if (isIndonesian) "Resep tidak ditemukan" else "No recipes found",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold
                 )
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Try searching for something else",
+                text = if (isIndonesian) "Coba cari yang lain" else "Try searching for something else",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
