@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">RecipeMe</string>
+    <string name="default_web_client_id">924909688370-r1vv0hrnv0j16ncbaosttc9nebq26dl8.apps.googleusercontent.com</string>
+
 </resources>

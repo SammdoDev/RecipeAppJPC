@@ -2,18 +2,15 @@ package com.samuel.recipeApp.ui.detail
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,17 +19,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
-
-private val GradientPrimary = Color(0xFF667eea)
-private val GradientSecondary = Color(0xFF764ba2)
-private val DarkText = Color(0xFF1a1a2e)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,11 +38,14 @@ fun RecipeDetailScreen(
     val scrollState = rememberScrollState()
     var isIndonesian by remember { mutableStateOf(false) }
 
+    val isDarkTheme = isSystemInDarkTheme()
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
     LaunchedEffect(recipeId) {
         viewModel.loadRecipeDetail(recipeId)
     }
 
-    // Auto translate ketika bahasa diubah ke Indonesia
     LaunchedEffect(isIndonesian) {
         if (isIndonesian && uiState.translatedMeal == null && uiState.recipe != null) {
             viewModel.translateRecipe()
@@ -58,13 +54,19 @@ fun RecipeDetailScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FE))) {
+    val backgroundColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFF8F9FE)
+
+    Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
         when {
-            uiState.isLoading -> ModernLoadingState(isIndonesian = isIndonesian)
+            uiState.isLoading -> ModernLoadingState(
+                isIndonesian = isIndonesian,
+                isDarkTheme = isDarkTheme
+            )
             uiState.error != null -> ModernErrorState(
                 error = uiState.error ?: "Unknown error",
                 onRetry = { viewModel.loadRecipeDetail(recipeId) },
-                isIndonesian = isIndonesian
+                isIndonesian = isIndonesian,
+                isDarkTheme = isDarkTheme
             )
             uiState.recipe != null -> {
                 ModernRecipeDetailContent(
@@ -74,7 +76,9 @@ fun RecipeDetailScreen(
                     onBackPressed = onBackPressed,
                     isIndonesian = isIndonesian,
                     isTranslating = uiState.isTranslating,
-                    onTranslateClick = { isIndonesian = !isIndonesian }
+                    onTranslateClick = { isIndonesian = !isIndonesian },
+                    isDarkTheme = isDarkTheme,
+                    isLandscape = isLandscape
                 )
             }
         }
@@ -89,14 +93,26 @@ fun ModernRecipeDetailContent(
     onBackPressed: () -> Unit,
     isIndonesian: Boolean,
     isTranslating: Boolean,
-    onTranslateClick: () -> Unit
+    onTranslateClick: () -> Unit,
+    isDarkTheme: Boolean,
+    isLandscape: Boolean
 ) {
     val animatedProgress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         animatedProgress.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
     }
 
-    // Get ingredients dan instructions
+    // Theme colors
+    val backgroundColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFF8F9FE)
+    val surfaceColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color.White
+    val cardColor = if (isDarkTheme) Color(0xFF2A2A2A) else Color.White
+    val textColor = if (isDarkTheme) Color(0xFFE0E0E0) else Color(0xFF1a1a2e)
+    val textSecondary = if (isDarkTheme) Color(0xFFB0B0B0) else Color.Gray
+    val dividerColor = if (isDarkTheme) Color(0xFF3A3A3A) else Color(0xFFF0F0F0)
+
+    val gradientPrimary = if (isDarkTheme) Color(0xFF5a67d8) else Color(0xFF667eea)
+    val gradientSecondary = if (isDarkTheme) Color(0xFF6b46c1) else Color(0xFF764ba2)
+
     val ingredients = translatedMeal?.getIngredients(isIndonesian) ?: recipe.getIngredients()
     val instructions = translatedMeal?.getInstructions(isIndonesian) ?: recipe.getInstructionSteps()
 
@@ -110,7 +126,7 @@ fun ModernRecipeDetailContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(380.dp)
+                    .height(if (isLandscape) 280.dp else 380.dp)
             ) {
                 SubcomposeAsyncImage(
                     model = recipe.strMealThumb,
@@ -119,10 +135,15 @@ fun ModernRecipeDetailContent(
                     contentScale = ContentScale.Crop,
                     loading = {
                         Box(
-                            modifier = Modifier.fillMaxSize().background(Color(0xFFF0F0F0)),
+                            modifier = Modifier.fillMaxSize().background(
+                                if (isDarkTheme) Color(0xFF2A2A2A) else Color(0xFFF0F0F0)
+                            ),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = GradientPrimary, strokeWidth = 3.dp)
+                            CircularProgressIndicator(
+                                color = gradientPrimary,
+                                strokeWidth = 3.dp
+                            )
                         }
                     }
                 )
@@ -146,88 +167,102 @@ fun ModernRecipeDetailContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 44.dp, start = 16.dp, end = 16.dp),
+                        .padding(
+                            top = if (isLandscape) 16.dp else 44.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    IconButton(
-                        onClick = onBackPressed,
+                    Box(
                         modifier = Modifier
                             .size(44.dp)
-                            .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = CircleShape
+                            )
+                            .background(
+                                color = surfaceColor.copy(alpha = 0.9f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = DarkText
-                        )
+                        IconButton(onClick = onBackPressed) {
+                            Icon(
+                                imageVector = Icons.Outlined.ArrowBack,
+                                contentDescription = "Back",
+                                tint = textColor
+                            )
+                        }
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Translate Button with Loading Indicator
-                        IconButton(
-                            onClick = onTranslateClick,
-                            enabled = !isTranslating,
+                        // Translate Button
+                        Box(
                             modifier = Modifier
                                 .size(44.dp)
+                                .shadow(
+                                    elevation = 4.dp,
+                                    shape = CircleShape
+                                )
                                 .background(
-                                    if (isIndonesian) GradientPrimary.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.9f),
-                                    CircleShape
-                                )
+                                    color = if (isIndonesian)
+                                        gradientPrimary.copy(alpha = 0.9f)
+                                    else
+                                        surfaceColor.copy(alpha = 0.9f),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            if (isTranslating) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = if (isIndonesian) Color.White else GradientPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.Translate,
-                                    contentDescription = "Translate",
-                                    tint = if (isIndonesian) Color.White else GradientPrimary
-                                )
+                            IconButton(
+                                onClick = onTranslateClick,
+                                enabled = !isTranslating
+                            ) {
+                                if (isTranslating) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = if (isIndonesian) Color.White else gradientPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Translate,
+                                        contentDescription = "Translate",
+                                        tint = if (isIndonesian) Color.White else textColor
+                                    )
+                                }
                             }
                         }
 
-                        IconButton(
-                            onClick = { },
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color.White.copy(alpha = 0.9f), CircleShape)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Share,
-                                contentDescription = "Share",
-                                tint = DarkText
-                            )
-                        }
-                        IconButton(
-                            onClick = { },
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Color.White.copy(alpha = 0.9f), CircleShape)
-                        ) {
-                            Icon(
-                                Icons.Outlined.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = Color(0xFFE91E63)
-                            )
-                        }
                     }
                 }
 
-                // YouTube Button (if available)
+                // YouTube Button
                 recipe.strYoutube?.let {
-                    FloatingActionButton(
-                        onClick = { /* Open YouTube */ },
+                    Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(16.dp)
-                            .offset(y = 28.dp),
-                        containerColor = Color(0xFFFF0000),
-                        contentColor = Color.White
+                            .offset(y = 28.dp)
+                            .size(56.dp)
+                            .shadow(
+                                elevation = 6.dp,
+                                shape = CircleShape
+                            )
+                            .background(
+                                color = Color(0xFFFF0000),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.PlayArrow, if (isIndonesian) "Tonton Video" else "Watch Video")
+                        IconButton(onClick = { }) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Play video",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -238,15 +273,21 @@ fun ModernRecipeDetailContent(
                     .fillMaxWidth()
                     .offset(y = (-24).dp),
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-                color = Color(0xFFF8F9FE)
+                color = backgroundColor
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    // Title & Info
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = if (isLandscape) 32.dp else 24.dp,
+                        vertical = 24.dp
+                    )
+                ) {
+                    // Title
                     Text(
                         text = recipe.strMeal,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = DarkText
+                            color = textColor,
+                            fontSize = if (isLandscape) 26.sp else 28.sp
                         ),
                         modifier = Modifier.graphicsLayer {
                             alpha = animatedProgress.value
@@ -266,14 +307,14 @@ fun ModernRecipeDetailContent(
                         recipe.strCategory?.let { category ->
                             ModernTag(
                                 text = if (isIndonesian) translateCategory(category) else category,
-                                icon = Icons.Rounded.Restaurant,
-                                gradient = listOf(GradientPrimary, GradientSecondary)
+                                icon = Icons.Outlined.Restaurant,
+                                gradient = listOf(gradientPrimary, gradientSecondary)
                             )
                         }
                         recipe.strArea?.let { area ->
                             ModernTag(
                                 text = if (isIndonesian) translateArea(area) else area,
-                                icon = Icons.Rounded.Public,
+                                icon = Icons.Outlined.Place,
                                 gradient = listOf(Color(0xFF11998e), Color(0xFF38ef7d))
                             )
                         }
@@ -281,60 +322,154 @@ fun ModernRecipeDetailContent(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // Ingredients Section
-                    SectionHeader(
-                        title = if (isIndonesian) "Bahan-bahan" else "Ingredients",
-                        icon = Icons.Rounded.ShoppingCart,
-                        itemCount = ingredients.size
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .shadow(
-                                elevation = 8.dp,
-                                shape = RoundedCornerShape(20.dp),
-                                spotColor = GradientPrimary.copy(alpha = 0.15f)
-                            ),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            ingredients.forEachIndexed { index, (ingredient, measure) ->
-                                IngredientItem(
-                                    ingredient = ingredient,
-                                    measure = measure,
-                                    index = index + 1
+                    if (isLandscape) {
+                        // Landscape Layout
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                SectionHeader(
+                                    title = if (isIndonesian) "Bahan-bahan" else "Ingredients",
+                                    icon = Icons.Outlined.ShoppingCart,
+                                    itemCount = ingredients.size,
+                                    textColor = textColor,
+                                    gradientPrimary = gradientPrimary,
+                                    gradientSecondary = gradientSecondary
                                 )
-                                if (index < ingredients.lastIndex) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 12.dp),
-                                        color = Color(0xFFF0F0F0)
-                                    )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .shadow(
+                                            elevation = 8.dp,
+                                            shape = RoundedCornerShape(20.dp),
+                                            spotColor = gradientPrimary.copy(alpha = 0.15f)
+                                        ),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = CardDefaults.cardColors(containerColor = cardColor)
+                                ) {
+                                    Column(modifier = Modifier.padding(20.dp)) {
+                                        ingredients.forEachIndexed { index, (ingredient, measure) ->
+                                            IngredientItem(
+                                                ingredient = ingredient,
+                                                measure = measure,
+                                                index = index + 1,
+                                                textColor = textColor,
+                                                gradientPrimary = gradientPrimary,
+                                                gradientSecondary = gradientSecondary,
+                                                dividerColor = dividerColor,
+                                                isDarkTheme = isDarkTheme
+                                            )
+                                            if (index < ingredients.lastIndex) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(vertical = 12.dp),
+                                                    color = dividerColor
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                SectionHeader(
+                                    title = if (isIndonesian) "Cara Memasak" else "Instructions",
+                                    icon = Icons.Outlined.MenuBook,
+                                    itemCount = null,
+                                    textColor = textColor,
+                                    gradientPrimary = gradientPrimary,
+                                    gradientSecondary = gradientSecondary
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    instructions.forEachIndexed { index, step ->
+                                        InstructionStep(
+                                            stepNumber = index + 1,
+                                            instruction = step.trim(),
+                                            textColor = textColor,
+                                            cardColor = cardColor,
+                                            gradientPrimary = gradientPrimary,
+                                            gradientSecondary = gradientSecondary
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
+                    } else {
+                        // Portrait Layout
+                        SectionHeader(
+                            title = if (isIndonesian) "Bahan-bahan" else "Ingredients",
+                            icon = Icons.Outlined.ShoppingCart,
+                            itemCount = ingredients.size,
+                            textColor = textColor,
+                            gradientPrimary = gradientPrimary,
+                            gradientSecondary = gradientSecondary
+                        )
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    // Instructions Section
-                    SectionHeader(
-                        title = if (isIndonesian) "Cara Memasak" else "Instructions",
-                        icon = Icons.Rounded.MenuBook,
-                        itemCount = null
-                    )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(
+                                    elevation = 8.dp,
+                                    shape = RoundedCornerShape(20.dp),
+                                    spotColor = gradientPrimary.copy(alpha = 0.15f)
+                                ),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = cardColor)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                ingredients.forEachIndexed { index, (ingredient, measure) ->
+                                    IngredientItem(
+                                        ingredient = ingredient,
+                                        measure = measure,
+                                        index = index + 1,
+                                        textColor = textColor,
+                                        gradientPrimary = gradientPrimary,
+                                        gradientSecondary = gradientSecondary,
+                                        dividerColor = dividerColor,
+                                        isDarkTheme = isDarkTheme
+                                    )
+                                    if (index < ingredients.lastIndex) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 12.dp),
+                                            color = dividerColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
 
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        instructions.forEachIndexed { index, step ->
-                            InstructionStep(
-                                stepNumber = index + 1,
-                                instruction = step.trim()
-                            )
+                        SectionHeader(
+                            title = if (isIndonesian) "Cara Memasak" else "Instructions",
+                            icon = Icons.Outlined.MenuBook,
+                            itemCount = null,
+                            textColor = textColor,
+                            gradientPrimary = gradientPrimary,
+                            gradientSecondary = gradientSecondary
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            instructions.forEachIndexed { index, step ->
+                                InstructionStep(
+                                    stepNumber = index + 1,
+                                    instruction = step.trim(),
+                                    textColor = textColor,
+                                    cardColor = cardColor,
+                                    gradientPrimary = gradientPrimary,
+                                    gradientSecondary = gradientSecondary
+                                )
+                            }
                         }
                     }
 
@@ -345,7 +480,6 @@ fun ModernRecipeDetailContent(
     }
 }
 
-// Helper functions tetap sama
 fun translateCategory(category: String): String {
     return when (category) {
         "Beef" -> "Daging Sapi"
@@ -399,7 +533,11 @@ fun translateArea(area: String): String {
 }
 
 @Composable
-fun ModernTag(text: String, icon: ImageVector, gradient: List<Color>) {
+fun ModernTag(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    gradient: List<Color>
+) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = Color.Transparent,
@@ -413,7 +551,12 @@ fun ModernTag(text: String, icon: ImageVector, gradient: List<Color>) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(icon, null, modifier = Modifier.size(16.dp), tint = Color.White)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = Color.White
+            )
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium.copy(
@@ -426,38 +569,50 @@ fun ModernTag(text: String, icon: ImageVector, gradient: List<Color>) {
 }
 
 @Composable
-fun SectionHeader(title: String, icon: ImageVector, itemCount: Int?) {
+fun SectionHeader(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    itemCount: Int?,
+    textColor: Color,
+    gradientPrimary: Color,
+    gradientSecondary: Color
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .background(
-                    brush = Brush.linearGradient(listOf(GradientPrimary, GradientSecondary)),
+                    brush = Brush.linearGradient(listOf(gradientPrimary, gradientSecondary)),
                     shape = RoundedCornerShape(12.dp)
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = textColor
             )
         )
         itemCount?.let {
             Spacer(modifier = Modifier.width(8.dp))
             Surface(
                 shape = CircleShape,
-                color = GradientPrimary.copy(alpha = 0.1f)
+                color = gradientPrimary.copy(alpha = 0.1f)
             ) {
                 Text(
                     text = "$it",
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelMedium.copy(
-                        color = GradientPrimary,
+                        color = gradientPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -467,7 +622,16 @@ fun SectionHeader(title: String, icon: ImageVector, itemCount: Int?) {
 }
 
 @Composable
-fun IngredientItem(ingredient: String, measure: String, index: Int) {
+fun IngredientItem(
+    ingredient: String,
+    measure: String,
+    index: Int,
+    textColor: Color,
+    gradientPrimary: Color,
+    gradientSecondary: Color,
+    dividerColor: Color,
+    isDarkTheme: Boolean
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -476,7 +640,7 @@ fun IngredientItem(ingredient: String, measure: String, index: Int) {
             modifier = Modifier
                 .size(32.dp)
                 .background(
-                    color = GradientPrimary.copy(alpha = 0.1f),
+                    color = gradientPrimary.copy(alpha = 0.1f),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -484,7 +648,7 @@ fun IngredientItem(ingredient: String, measure: String, index: Int) {
             Text(
                 text = "$index",
                 style = MaterialTheme.typography.labelMedium.copy(
-                    color = GradientPrimary,
+                    color = gradientPrimary,
                     fontWeight = FontWeight.Bold
                 )
             )
@@ -494,19 +658,19 @@ fun IngredientItem(ingredient: String, measure: String, index: Int) {
             text = ingredient,
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontWeight = FontWeight.Medium,
-                color = DarkText
+                color = textColor
             ),
             modifier = Modifier.weight(1f)
         )
         Surface(
             shape = RoundedCornerShape(8.dp),
-            color = Color(0xFFF8F9FE)
+            color = if (isDarkTheme) Color(0xFF3A3A3A) else Color(0xFFF8F9FE)
         ) {
             Text(
                 text = measure,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = GradientSecondary,
+                    color = gradientSecondary,
                     fontWeight = FontWeight.Medium
                 )
             )
@@ -515,7 +679,14 @@ fun IngredientItem(ingredient: String, measure: String, index: Int) {
 }
 
 @Composable
-fun InstructionStep(stepNumber: Int, instruction: String) {
+fun InstructionStep(
+    stepNumber: Int,
+    instruction: String,
+    textColor: Color,
+    cardColor: Color,
+    gradientPrimary: Color,
+    gradientSecondary: Color
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -525,14 +696,14 @@ fun InstructionStep(stepNumber: Int, instruction: String) {
                 spotColor = Color.Black.copy(alpha = 0.05f)
             ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .background(
-                        brush = Brush.linearGradient(listOf(GradientPrimary, GradientSecondary)),
+                        brush = Brush.linearGradient(listOf(gradientPrimary, gradientSecondary)),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -549,7 +720,7 @@ fun InstructionStep(stepNumber: Int, instruction: String) {
             Text(
                 text = instruction,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = DarkText,
+                    color = textColor,
                     lineHeight = 22.sp
                 ),
                 modifier = Modifier.weight(1f)
@@ -559,47 +730,75 @@ fun InstructionStep(stepNumber: Int, instruction: String) {
 }
 
 @Composable
-fun ModernLoadingState(isIndonesian: Boolean = false) {
+fun ModernLoadingState(isIndonesian: Boolean = false, isDarkTheme: Boolean = false) {
+    val textSecondary = if (isDarkTheme) Color(0xFFB0B0B0) else Color.Gray
+    val gradientPrimary = if (isDarkTheme) Color(0xFF5a67d8) else Color(0xFF667eea)
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             CircularProgressIndicator(
-                color = GradientPrimary,
+                color = gradientPrimary,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(48.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 if (isIndonesian) "Memuat resep..." else "Loading recipe...",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Color.Gray)
+                style = MaterialTheme.typography.bodyMedium.copy(color = textSecondary)
             )
         }
     }
 }
 
 @Composable
-fun ModernErrorState(error: String, onRetry: () -> Unit, isIndonesian: Boolean = false) {
+fun ModernErrorState(
+    error: String,
+    onRetry: () -> Unit,
+    isIndonesian: Boolean = false,
+    isDarkTheme: Boolean = false
+) {
+    val textColor = if (isDarkTheme) Color(0xFFE0E0E0) else Color(0xFF1a1a2e)
+    val textSecondary = if (isDarkTheme) Color(0xFFB0B0B0) else Color.Gray
+    val gradientPrimary = if (isDarkTheme) Color(0xFF5a67d8) else Color(0xFF667eea)
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("😔", fontSize = 64.sp)
-            Spacer(modifier = Modifier.height(16.dp))
+            Icon(
+                imageVector = Icons.Outlined.ErrorOutline,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = Color(0xFFFF6B6B)
+            )
             Text(
                 if (isIndonesian) "Ada yang salah" else "Something went wrong",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(error, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                error,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary
+            )
             Button(
                 onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(containerColor = GradientPrimary),
+                colors = ButtonDefaults.buttonColors(containerColor = gradientPrimary),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Rounded.Refresh, null)
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isIndonesian) "Coba Lagi" else "Try Again")
+                Text(text = if (isIndonesian) "Coba Lagi" else "Try Again")
             }
         }
     }
