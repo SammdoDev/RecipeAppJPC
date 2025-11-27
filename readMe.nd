@@ -5,14 +5,14 @@ Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep
 ## 📱 Screenshots
 
 ### 1. Welcome Screen
-https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/1.jpg?raw=1
+<img src="https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/1.jpg?raw=1" width="260">
 
 - Login dengan Google Sign-In
 - Tampilan welcome yang menarik
 - Fitur unggulan: 10,000+ Recipes, Easy Search, Save Favorites
 
 ### 2. Home Screen
-<img src="https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/2.jpg" width="260">
+<img src="https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/2.jpg?raw=1" width="260">
 
 - Greeting dengan nama user dan foto profil
 - Search bar untuk mencari resep
@@ -23,7 +23,7 @@ https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/1.jpg?raw=1
 - Label asal masakan (Canadian, Syrian, dll)
 
 ### 3. Detail Recipe Screen
-<img src="https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/3.jpg" width="260">
+<img src="https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/3.jpg?raw=1" width="260">
 
 - Gambar full-screen resep
 - Nama resep
