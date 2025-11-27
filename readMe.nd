@@ -1,0 +1,116 @@
+# Recipe App 🍳
+
+Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep, detail lengkap, dan terjemahan otomatis menggunakan Google Translate API.
+
+## 📱 Screenshots
+
+### 1. Welcome Screen
+![Welcome Screen](1.jpg)
+- Login dengan Google Sign-In
+- Tampilan welcome yang menarik
+- Fitur unggulan 10,000+ Recipes, Easy Search, Save Favorites
+
+### 2. Home Screen
+![Home Screen](2.jpg)
+- Greeting dengan nama user dan foto profil
+- Search bar untuk mencari resep
+- Filter kategori (All, Beef, Chicken, Dessert, Side)
+- Grid layout resep dengan gambar menarik
+- Tombol translate untuk mengubah bahasa
+- Badge kategori pada setiap resep
+- Label asal masakan (Canadian, Syrian, dll)
+
+### 3. Detail Recipe Screen
+![Detail Screen](3.jpg)
+- Gambar full-screen resep
+- Nama resep
+- Kategori dan asal masakan
+- Daftar ingredients lengkap dengan takaran
+- Tombol translate untuk terjemahan
+- Tombol back untuk kembali ke home
+
+## ✨ Fitur Utama
+
+### 🔐 Authentication
+- Login menggunakan Firebase Google Sign-In
+- Menampilkan profil user (nama & foto)
+- Session management
+
+### 🏠 Home Screen
+- Pencarian resep
+- Filter berdasarkan kategori
+- Tampilan grid dengan gambar resep
+- Informasi kategori dan asal resep
+- Fitur translate
+
+### 📖 Detail Recipe
+- Informasi lengkap resep
+- Daftar bahan (ingredients) dengan takaran
+- Kategori dan asal masakan
+- Fitur translate untuk bahan
+
+### 🌐 Google Translate Integration
+- Translate nama resep
+- Translate ingredients
+- Support multi-bahasa
+
+## 🚀 Tech Stack
+
+- Platform Android Native
+- Language Kotlin
+- IDE Android Studio
+- Authentication Firebase Authentication (Google Sign-In)
+- Database Firebase Firestore
+- Translation Google Cloud Translation API
+- UI Material Design 3, RecyclerView, CardView
+
+## 📦 Dependencies
+
+```gradle
+ Firebase
+implementation 'com.google.firebasefirebase-auth-ktx'
+implementation 'com.google.firebasefirebase-firestore-ktx'
+implementation 'com.google.android.gmsplay-services-auth'
+
+ Google Translate
+implementation 'com.google.cloudgoogle-cloud-translate'
+
+ UI Components
+implementation 'androidx.recyclerviewrecyclerview'
+implementation 'androidx.cardviewcardview'
+implementation 'com.google.android.materialmaterial'
+
+ Image Loading
+implementation 'com.github.bumptech.glideglide'
+
+ Coroutines
+implementation 'org.jetbrains.kotlinxkotlinx-coroutines-android'
+```
+
+## 📝 Fitur yang Diimplementasikan
+
+✅ Google Sign-In Authentication
+✅ Home screen dengan daftar resep
+✅ Search functionality
+✅ Filter kategori resep
+✅ Detail resep dengan ingredients
+✅ Google Translate integration
+✅ User profile display
+✅ Responsive UI dengan Material Design
+
+## 🎨 Design Pattern
+
+- MVVM (Model-View-ViewModel)
+- Repository Pattern untuk data management
+- Coroutines untuk async operations
+- LiveData untuk observable data
+
+## 🔑 API Keys Required
+
+1. Firebase Configuration (`google-services.json`)
+2. Google Translate API Key
+3. SHA-1 fingerprint untuk Google Sign-In
+
+## 👨‍💻 Developer
+
+Dibuat dengan ❤️ menggunakan Kotlin dan Android Studio
