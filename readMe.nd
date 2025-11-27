@@ -5,13 +5,15 @@ Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep
 ## 📱 Screenshots
 
 ### 1. Welcome Screen
-![Welcome Screen](1.jpg)
+<img src="1.jpg" width="300">
+
 - Login dengan Google Sign-In
 - Tampilan welcome yang menarik
-- Fitur unggulan 10,000+ Recipes, Easy Search, Save Favorites
+- Fitur unggulan: 10,000+ Recipes, Easy Search, Save Favorites
 
 ### 2. Home Screen
-![Home Screen](2.jpg)
+<img src="2.jpg" width="300">
+
 - Greeting dengan nama user dan foto profil
 - Search bar untuk mencari resep
 - Filter kategori (All, Beef, Chicken, Dessert, Side)
@@ -21,7 +23,8 @@ Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep
 - Label asal masakan (Canadian, Syrian, dll)
 
 ### 3. Detail Recipe Screen
-![Detail Screen](3.jpg)
+<img src="3.jpg" width="300">
+
 - Gambar full-screen resep
 - Nama resep
 - Kategori dan asal masakan
@@ -56,35 +59,35 @@ Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep
 
 ## 🚀 Tech Stack
 
-- Platform Android Native
-- Language Kotlin
-- IDE Android Studio
-- Authentication Firebase Authentication (Google Sign-In)
-- Database Firebase Firestore
-- Translation Google Cloud Translation API
-- UI Material Design 3, RecyclerView, CardView
+- **Platform**: Android Native
+- **Language**: Kotlin
+- **IDE**: Android Studio
+- **Authentication**: Firebase Authentication (Google Sign-In)
+- **Database**: Firebase Firestore
+- **Translation**: Google Cloud Translation API
+- **UI**: Material Design 3, RecyclerView, CardView
 
 ## 📦 Dependencies
 
 ```gradle
- Firebase
-implementation 'com.google.firebasefirebase-auth-ktx'
-implementation 'com.google.firebasefirebase-firestore-ktx'
-implementation 'com.google.android.gmsplay-services-auth'
+// Firebase
+implementation 'com.google.firebase:firebase-auth-ktx'
+implementation 'com.google.firebase:firebase-firestore-ktx'
+implementation 'com.google.android.gms:play-services-auth'
 
- Google Translate
-implementation 'com.google.cloudgoogle-cloud-translate'
+// Google Translate
+implementation 'com.google.cloud:google-cloud-translate'
 
- UI Components
-implementation 'androidx.recyclerviewrecyclerview'
-implementation 'androidx.cardviewcardview'
-implementation 'com.google.android.materialmaterial'
+// UI Components
+implementation 'androidx.recyclerview:recyclerview'
+implementation 'androidx.cardview:cardview'
+implementation 'com.google.android.material:material'
 
- Image Loading
-implementation 'com.github.bumptech.glideglide'
+// Image Loading
+implementation 'com.github.bumptech.glide:glide'
 
- Coroutines
-implementation 'org.jetbrains.kotlinxkotlinx-coroutines-android'
+// Coroutines
+implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android'
 ```
 
 ## 📝 Fitur yang Diimplementasikan
@@ -100,10 +103,10 @@ implementation 'org.jetbrains.kotlinxkotlinx-coroutines-android'
 
 ## 🎨 Design Pattern
 
-- MVVM (Model-View-ViewModel)
-- Repository Pattern untuk data management
-- Coroutines untuk async operations
-- LiveData untuk observable data
+- **MVVM** (Model-View-ViewModel)
+- **Repository Pattern** untuk data management
+- **Coroutines** untuk async operations
+- **LiveData** untuk observable data
 
 ## 🔑 API Keys Required
 
