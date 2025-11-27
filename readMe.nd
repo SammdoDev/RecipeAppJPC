@@ -5,7 +5,7 @@ Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep
 ## 📱 Screenshots
 
 ### 1. Welcome Screen
-<img src="https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/1.jpg" width="260">
+https://raw.githubusercontent.com/SammdoDev/RecipeAppJPC/master/1.jpg?raw=1
 
 - Login dengan Google Sign-In
 - Tampilan welcome yang menarik
@@ -94,4 +94,5 @@ Aplikasi resep masakan Android dengan fitur autentikasi Firebase, tampilan resep
 ## 👨‍💻 Developer
 
 Dibuat dengan ❤️ menggunakan Kotlin dan Android Studio
+
 
